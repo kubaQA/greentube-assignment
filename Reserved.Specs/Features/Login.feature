@@ -77,8 +77,8 @@ Feature: Login
       | valid.user@example.com | NewStr0ng!Pass1 |
 
 
-  @social @google @onboarding
-  Scenario Outline: First-time Google sign-in creates a new account
+  @regression
+  Scenario Outline: Successful login with Google
     Given I have an existing account linked with Google "<email>"
     When I navigate to the login page
     And I choose to continue with Google
