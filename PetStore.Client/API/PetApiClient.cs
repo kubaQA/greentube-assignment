@@ -45,8 +45,7 @@ public class PetApiClient
     {
         var request = new RestRequest($"/pet/{petId}", Method.Delete)
             .AddHeader("Accept", "application/json");
-
-        // Swagger Petstore v2 allows optional 'api_key' header for DELETE
+        
         if (!string.IsNullOrWhiteSpace(apiKey))
             request.AddHeader("api_key", apiKey);
 

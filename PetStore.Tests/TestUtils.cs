@@ -4,16 +4,13 @@ public static class TestUtils
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(500);
-
-    // Boolean condition with defaults
+    
     public static Task<bool> RetryUntilAsync(Func<Task<bool>> condition) =>
         RetryUntilAsync(condition, DefaultTimeout, DefaultInterval);
-
-    // Generic with defaults
+    
     public static Task<T?> RetryUntilAsync<T>(Func<Task<T?>> action) where T : class =>
         RetryUntilAsync(action, DefaultTimeout, DefaultInterval);
-
-    // Existing overloads with explicit timeout/interval
+    
     public static async Task<bool> RetryUntilAsync(
         Func<Task<bool>> condition,
         TimeSpan timeout,

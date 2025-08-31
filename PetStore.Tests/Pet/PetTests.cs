@@ -1,4 +1,5 @@
 using System.Net;
+using Allure.Xunit.Attributes;
 using FluentAssertions;
 using PetStore.Client.Models;
 using PetStore.Tests.Factories;
@@ -7,11 +8,14 @@ using Xunit.Sdk;
 
 namespace PetStore.Tests.Pet;
 
+[AllureSuite("Pet API")]
+[AllureEpic("Swagger Petstore")]
+[AllureOwner("kubaQA")]
 public class PetTests : TestBase, IAsyncLifetime
 {
     private Client.Models.Pet _payload = default!;
     private long _petId;
-    private Client.Models.Pet? _created; // store server echo for convenience
+    private Client.Models.Pet? _created;
 
     public PetTests(ITestOutputHelper output) : base(output) { }
 
@@ -45,10 +49,13 @@ public class PetTests : TestBase, IAsyncLifetime
         }
     }
 
+    [AllureFeature("Get pet by id")]
+    [AllureStory("GET /pet/{id}")]
+    [AllureTag("happy-path", "get")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/getPetById")]
     [Fact]
     public async Task GetPetById()
     {
-        // Eventually: GET /pet/{id} should return the created entity
         var fetched = await TestUtils.RetryUntilAsync(
             async () =>
             {
@@ -60,8 +67,7 @@ public class PetTests : TestBase, IAsyncLifetime
         );
 
         fetched.Should().NotBeNull("created pet should eventually be retrievable by id");
-
-        // Field-by-field validation
+        
         fetched!.Id.Should().Be(_petId);
         fetched.Name.Should().Be(_payload.Name);
         fetched.Status.Should().Be(_payload.Status);
@@ -70,11 +76,14 @@ public class PetTests : TestBase, IAsyncLifetime
         fetched.PhotoUrls.Should().BeEquivalentTo(_payload.PhotoUrls);
         fetched.Tags!.Should().HaveCount(1);
     }
-
+    
+    [AllureFeature("Find all available pets")]
+    [AllureStory("GET /pet/findByStatus")]
+    [AllureTag("happy-path", "list")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/findPetsByStatus")]
     [Fact]
     public async Task FindCreatedPetOnAvailablePetsList()
     {
-        // Eventually: new pet should appear on the "available" list
         var matched = await TestUtils.RetryUntilAsync(
             async () =>
             {
@@ -87,8 +96,7 @@ public class PetTests : TestBase, IAsyncLifetime
         );
 
         matched.Should().NotBeNull("freshly created pet should eventually be present in 'available' list");
-
-        // Field-by-field validation against original payload
+        
         matched!.Id.Should().Be(_petId);
         matched.Name.Should().Be(_payload.Name);
         matched.Status.Should().Be(_payload.Status);
@@ -97,21 +105,22 @@ public class PetTests : TestBase, IAsyncLifetime
         matched.PhotoUrls.Should().BeEquivalentTo(_payload.PhotoUrls);
         matched.Tags!.Should().HaveCount(1);
     }
-
+    
+    [AllureFeature("Update pet")]
+    [AllureStory("PUT /pet")]
+    [AllureTag("happy-path", "put")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/updatePet")]
     [Fact]
     public async Task UpdatePetStatusToSoldAndVerifyOnLists()
     {
-        // Update to "sold"
         _payload.Status = PetStatus.sold.ToString();
         var (updateResponse, updatedPet, updateError) = await Api.UpdatePetAsync(_payload);
-
-        // Update response checks
+        
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         updateError.Should().BeNull();
         updatedPet.Should().NotBeNull();
         updatedPet!.Status.Should().Be(PetStatus.sold.ToString());
-
-        // Eventually: pet should disappear from "available"
+        
         var notInAvailable = await TestUtils.RetryUntilAsync(
             async () =>
             {
@@ -123,8 +132,7 @@ public class PetTests : TestBase, IAsyncLifetime
             }
         );
         notInAvailable.Should().BeTrue("pet updated to sold should eventually disappear from 'available' list");
-
-        // Eventually: pet should appear on "sold" list; return and validate fields
+        
         var matchedSold = await TestUtils.RetryUntilAsync(
             async () =>
             {
@@ -146,6 +154,10 @@ public class PetTests : TestBase, IAsyncLifetime
         matchedSold.Tags!.Should().HaveCount(1);
     }
     
+    [AllureFeature("Update pet – Negative 400")]
+    [AllureStory("PUT /pet returns 400 for invalid id")]
+    [AllureTag("negative", "put")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/updatePet")]
     [Fact]
     public async Task PutShouldReturn400ForInvalidId()
     {
@@ -155,14 +167,19 @@ public class PetTests : TestBase, IAsyncLifetime
 
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         err.Should().NotBeNull();
+        err!.Code.Should().Be(400);
         err.Message.Should().Be("Invalid ID supplied");
     }
     
+    [AllureFeature("Update pet – Negative 404")]
+    [AllureStory("PUT /pet returns 404 when pet not found")]
+    [AllureTag("negative", "put")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/updatePet")]
     [Fact]
     public async Task UpdateShouldReturn404WhenPetNotFound()
     {
         var nonexistent = PetFactory.BuildRandomPet();
-        nonexistent.Id = 99_999_999_999_999; // unique id unlikely to exist
+        nonexistent.Id = 99_999_999_999_999;
 
         var (resp, _, err) = await Api.UpdatePetAsync(nonexistent);
 
@@ -171,17 +188,20 @@ public class PetTests : TestBase, IAsyncLifetime
         err!.Code.Should().Be(404);
         err.Message.Should().Be("Pet not found");
     }
-
+    
+    [AllureFeature("Update pet – Negative 405")]
+    [AllureStory("PUT /pet returns 405 validation exception")]
+    [AllureTag("negative", "put")]
+    [AllureLink("Swagger", "https://petstore.swagger.io/#/pet/updatePet")]
     [Fact]
     public async Task PutShouldReturn405ForValidationException()
     {
         var invalid = PetFactory.BuildPetForValidationError();
-
         var (resp, _, err) = await Api.UpdatePetAsync(invalid);
 
         ((int)resp.StatusCode).Should().Be(405);
         err.Should().NotBeNull();
+        err!.Code.Should().Be(405);
         err.Message.Should().Be("Validation exception");
     }
-
 }

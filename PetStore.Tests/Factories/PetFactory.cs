@@ -33,21 +33,13 @@ public static class PetFactory
         };
     }
 
-    /// <summary>
-    /// Build payload with invalid ID (0 or negative).
-    /// Should trigger 400 Invalid ID on API.
-    /// </summary>
     public static Client.Models.Pet BuildPetWithInvalidId()
     {
         var pet = BuildRandomPet();
         pet.Id = -200; // invalid id for swagger
         return pet;
     }
-
-    /// <summary>
-    /// Build payload missing required fields (name, photoUrls).
-    /// Should trigger 405 Validation Exception on API.
-    /// </summary>
+    
     public static Client.Models.Pet BuildPetForValidationError()
     {
         return new Client.Models.Pet
